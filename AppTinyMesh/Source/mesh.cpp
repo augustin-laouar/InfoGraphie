@@ -1,5 +1,4 @@
 #include "mesh.h"
-
 /*!
 \class Mesh mesh.h
 
@@ -117,6 +116,8 @@ void Mesh::AddTriangle(int a, int b, int c, int n)
   narray.push_back(n);
 }
 
+
+
 /*!
 \brief Add a smmoth quadrangle to the geometry.
 
@@ -202,6 +203,266 @@ Mesh::Mesh(const Box& box)
   AddTriangle(3, 2, 7, 3);
   AddTriangle(6, 7, 2, 3);
 }
+
+Mesh::Mesh(const Disk& disk) {
+    const int div = 100;
+    double step = 2 * PI / div;
+    double alpha;
+
+    vertices.resize(1);
+    vertices[0] = disk.getCenter();
+
+
+    normals.push_back(Vector(0, 1, 0));
+    //generation des points du disque
+    for (int i = 0; i <= div; ++i) {
+        alpha = i * step;
+        Vector v(cos(alpha) * disk.getRadius(), 0, sin(alpha) * disk.getRadius());
+        v += disk.getCenter();
+        vertices.push_back(v);
+    }
+
+    //création des triangles
+    varray.reserve(div * 3);
+    narray.reserve(div * 3);
+
+    for (int i = 1; i < div; i++) {
+        AddTriangle(0,i,i+1,0);
+    }
+    AddTriangle(0, div, 1, 0);
+}
+
+
+Mesh::Mesh(const Cylinder& c) {
+
+    const int div =50;
+    double step = 2 * PI / div;
+    double alpha;
+
+    // creation du disque du bas
+
+
+    vertices.push_back(c.getCenter() );
+
+
+    normals.push_back(Vector(cos(alpha), 0, sin(alpha)));
+    //generation des points du disque
+    for (int i = 0; i <= div; ++i) {
+        alpha = i * step;
+        //on considere le centre de ce disque  comme étant celui du cylindre
+        vertices.push_back(Vector(cos(alpha) * c.getRadius(), 0, sin(alpha) * c.getRadius()) + c.getCenter());
+    }
+
+    //création des triangles
+    varray.reserve(div * 3 * 2);
+    narray.reserve(div * 3 * 2);
+
+        for (int i = 1; i < div; i++) {
+            AddTriangle(0, i, i + 1, 0);
+        }
+        AddTriangle(0, div, 1, 0);
+    
+        
+   
+        Vector center(0, c.getHeight(), 0); // la coordonnee x du centre du disque du bas = celle du centre du disque du bas + la hauteur 
+        center += c.getCenter();
+        vertices.push_back(center);
+
+        //creation du disque du haut
+        normals.push_back(Vector(cos(alpha),1, sin(alpha)));
+        
+        //generation des points du disque
+        for (int i = 0; i <= div; ++i) {
+            alpha = i * step;
+            
+            vertices.push_back(Vector(cos(alpha) * c.getRadius(), 0, sin(alpha) * c.getRadius()) + center);
+        }
+
+        //création des triangle
+
+        for (int i = 1; i < div; i++) {
+            AddTriangle(div + 2, div + 2 + i, div + 2 + i + 1, 1);
+        }
+        AddTriangle(div + 2,div + 2 + div, div + 2 + 1, 1);
+
+        // a ce stade on a créé deux disques séparé avec la hauteur du cylindre
+
+        for (int i = 1; i <div ; i++)
+        {
+            AddTriangle(i, div + 3 + i, i + 1, 1);
+            AddTriangle(i + 1, div + 3 + i, div+3+i+1, 1);
+
+    }
+    AddTriangle(div, div + div + 3, 1, 1);
+    AddTriangle(1, div + div + 3, div + 3 + 1, 1);
+
+      
+}
+
+
+
+Mesh::Mesh(const Sphere& sphere) {
+    const int divBeta = 64;
+    const int divAlpha = divBeta;
+    double beta, alpha;
+
+
+    varray.reserve(divBeta * divBeta);
+    narray.reserve((divBeta * divBeta));
+    int counter = 0;
+    int normaleCounter = 0;
+    int previousCircle[divBeta+1];//permet de stocker les indices des sommets du cercle précent
+    int buffer[divBeta+1];
+
+    for (int i = 0; i <= divAlpha; ++i) {
+        alpha = -0.5 * PI + double(i) * PI / divAlpha;
+        for (int j = 0; j <= divBeta; ++j)
+        {
+            beta = double(j) * 2.0 * PI / (divBeta);
+            Vector v(cos(alpha) * cos(beta) * sphere.getRadius(), sin(alpha) * sphere.getRadius(), cos(alpha) * sin(beta) * sphere.getRadius());
+            v += sphere.getCenter();
+            vertices.push_back(v);
+            buffer[j] = counter;
+            counter++;
+            if (i > 0) { // ce n'est pas le premier cercle
+                if (j != 0) {//pas premier point de ce cercle
+                    Vector normale = vertices[counter-1] - vertices[counter-2];
+                    normale *= (vertices[counter - 2] - vertices[previousCircle[j-1]]);
+                    normals.push_back(normale);
+                    normaleCounter++;
+                    AddTriangle(previousCircle[j - 1], counter - 2,counter -1, normaleCounter - 1);//triangle 1
+                    normale = vertices[counter - 1] - vertices[previousCircle[j-1]];
+                    normale *= (vertices[previousCircle[j]] - vertices[counter-1]);
+                    normals.push_back(normale);
+                    normaleCounter++;
+                    AddTriangle(previousCircle[j], counter - 1, previousCircle[j - 1], normaleCounter - 1);//triangle 2
+                    if (j == divBeta) {//relier le dernier point avec le premier 
+                        Vector normale = vertices[counter - 1] - vertices[counter - divBeta - 1];
+                        normale *= (vertices[counter - 1] - vertices[previousCircle[divBeta]]);
+                        normals.push_back(normale);
+                        normaleCounter++;
+                        AddTriangle(counter - 1, previousCircle[divBeta], counter - divBeta - 1, normaleCounter - 1);
+                        Vector normale2 = vertices[previousCircle[divBeta]] - vertices[counter - 1];
+                        normale2 *= (vertices[counter - 1] - vertices[counter - divBeta - 1]);
+                        normals.push_back(normale);
+                        normaleCounter++;
+                        AddTriangle(previousCircle[divBeta], counter - 1, counter - divBeta - 1, normaleCounter - 1);
+                    }
+                }
+                
+            }
+        }
+        for (int k = 0; k <= divBeta; k++){
+            previousCircle[k] = buffer[k];
+        }
+    }
+}
+
+int wrapping(int x, int step) {
+    return (x + 1) % step;
+}
+Mesh::Mesh(const Tore& tore) {
+    int innerStep = 48;
+    int outerStep = 48;
+    double outerR;
+    double innerR;
+    double innerDistance;
+    double x, y, z;
+
+    //generation des sommets
+    for (int i = 0; i < outerStep; i++) {
+         outerR = double(i) / outerStep * PI *2.0;
+        for (int j = 0; j < innerStep; j++) {
+             innerR = double(j) / innerStep * PI * 2.0;
+             innerDistance = cos(innerR) * tore.getInnerRadius();
+             x = sin(outerR) * (innerDistance + tore.getOuterRadius());
+             y = cos(outerR) * (innerDistance + tore.getOuterRadius());
+             z = sin(innerR) * tore.getInnerRadius();
+             vertices.push_back(Vector(x, y, z) + tore.getCenter());
+        }
+    }
+    //generation des triangles
+    varray.reserve(innerStep * outerStep * 6);
+    narray.reserve(innerStep * outerStep * 6);
+    int p1, p2, p3;
+    int normaleCounter = 0;
+    for (int i = 0; i < outerStep; i++) {
+        for (int j = 0; j < innerStep; j++) {
+            //triangle 1
+            p1 = (i * innerStep) + j;
+            p2 = (i * innerStep) + wrapping(j,innerStep);
+            p3 = wrapping(i, outerStep) * innerStep + wrapping(j, innerStep);
+            Vector normale = vertices[p1] - vertices[p2];
+            normale *= Vector(vertices[p1] - vertices[p3]);
+            normals.push_back(normale);
+            AddTriangle(p1, p2, p3, normaleCounter);
+            normaleCounter++;
+
+            //triangle 2
+            p1 = wrapping(i,outerStep)*innerStep + wrapping(j,innerStep);
+            p2 = wrapping(i,outerStep) * innerStep + j;
+            p3 = i * innerStep + j;
+            normale = vertices[p1] - vertices[p2];
+            normale *= Vector(vertices[p1] - vertices[p3]);
+            normals.push_back(normale);
+            AddTriangle(p1, p2, p3, normaleCounter);
+            normaleCounter++;
+
+
+        }
+    }
+
+
+}
+
+Mesh::Mesh(const Capsule& capsule) {
+   
+    
+    // on considere le centre de la capsule comme celui du cylindre ainsi que son rayon et sa hauteur/2
+    Mesh cylindre(Cylinder(capsule.getCenter(), capsule.getRadius(), capsule.getHeight()- 2 * capsule.getRadius()));
+    
+    Vector temp(0, capsule.getHeight()- 2* capsule.getRadius(), 0);
+
+    Mesh sphere1 = Mesh(Sphere(capsule.getCenter() , capsule.getRadius()));
+    Mesh sphere2 = Mesh(Sphere(capsule.getCenter() + temp, capsule.getRadius()));
+  
+    cylindre.merge(sphere1);
+    cylindre.merge(sphere2);
+    this->merge(cylindre);
+    
+    
+
+}
+
+Mesh::Mesh(const HeightField& hf) {
+    for (int i = 0; i < hf.getNx(); i++) {
+        for (int j = 0; j < hf.getNy(); j++) {
+            vertices.push_back(hf.getPoint(i, j));
+        }
+    }
+    //varray.reserve(3);
+    //narray.reserve(hf.getNx() * hf.getNy());
+    int v1, v2, v3;
+    Vector normale;
+    for (int i = 1; i < hf.getNx(); i++) {
+        for (int j = 1; j < hf.getNy(); j++) {
+            v1 = (i - 1) * hf.getNy() + (j - 1);
+            v2 = (i - 1) * hf.getNy() + j;
+            v3 = i * hf.getNy() + j;
+            normale = vertices[v1] - vertices[v2];
+            normale *= Vector(vertices[v1] - vertices[v3]);
+            normals.push_back(normale);
+            AddTriangle(v1, v2, v3, normals.size() - 1);
+            v2 = i * hf.getNy() + (j - 1);
+            normale = vertices[v1] - vertices[v2];
+            normale *= Vector(vertices[v1] - vertices[v3]);
+            normals.push_back(normale);
+            AddTriangle(v1, v2, v3, normals.size() - 1);
+        }
+    }
+}
+
+
 
 /*!
 \brief Scale the mesh.
@@ -305,5 +566,112 @@ void Mesh::SaveObj(const QString& url, const QString& meshName) const
   }
   out.flush();
   data.close();
+}
+
+
+
+void Mesh::merge(const Mesh& a)
+{
+    int size = this->vertices.size();
+
+    for (int i = 0; i < a.vertices.size(); i++)
+    {
+        this->vertices.push_back(a.vertices[i]);
+
+    }
+
+    for (int j = 0; j < a.varray.size(); j++)
+    {
+        this->varray.push_back(a.varray[j] + size);
+    }
+    size = this->normals.size();
+    for (int k = 0; k < a.normals.size(); k++)
+    {
+        this->normals.push_back(a.normals[k]);
+    }
+    
+    for (int m = 0; m < a.narray.size(); m++)
+    {
+        this->narray.push_back(a.narray[m]+size);
+    }
+}
+void Mesh::transformation(const Matrix& m) {
+    for (int i = 0; i < vertices.size(); i++) {
+        vertices[i] = m * vertices[i];
+    }
+}
+void Mesh::homothetie(const Vector& v) {
+    Matrix m;
+    m.homothetieMatrix(v);
+    transformation(m);
+
+}
+void Mesh::rotate(const Vector& v, double angle) {
+    Matrix m;
+    m.rotateMatrix(v, angle);
+    std::cout << m << std::endl;
+    transformation(m);
+}
+
+void Mesh::rotateX(double angle) {
+    rotate(Vector(1, 0, 0), angle);
+}
+void Mesh::rotateY(double angle) {
+    rotate(Vector(0, 1, 0), angle);
+}
+void Mesh::rotateZ(double angle) {
+    rotate(Vector(0, 0, 1), angle);
+}
+
+void Mesh::translation(const Vector& v) {
+    for (int i = 0; i < vertices.size(); i++) {
+        vertices[i] = vertices[i] + v;
+    }
+}
+
+void Mesh::sphereWarp(const Sphere& s,const Vector& v) {
+    double d;
+    for (int i = 0; i < vertices.size(); i++) {
+        d = Distance(s.getCenter(), vertices[i]);
+        if (d < s.getRadius()) {
+            double dr = 1 - (d / s.getRadius());
+            if (dr != 0) { //smooth stepping
+                dr = 3 * dr * dr - 2 * dr * dr * dr;
+            }
+            Vector deplacement(v * dr);
+            vertices[i] += deplacement;
+        }
+    }
+}
+void Mesh::sphereZoom(const Sphere& s, const Vector& v) {
+    double d;
+    for (int i = 0; i < vertices.size(); i++) {
+        d = Distance(s.getCenter(), vertices[i]);
+        if (d < s.getRadius()) {
+            double dr = 1 - (d / s.getRadius());
+            if (dr != 0) { //smooth stepping
+                dr = 3 * dr * dr - 2 * dr * dr * dr;
+            }
+            Vector zoom(v * dr);
+            Matrix m;
+            m.homothetieMatrix(zoom);
+            vertices[i] = m * vertices[i];
+        }
+    }
+}
+void Mesh::sphereRotate(const Sphere& s, const Vector& v, double angle) {
+    double d;
+    for (int i = 0; i < vertices.size(); i++) {
+        d = Distance(s.getCenter(), vertices[i]);
+        if (d < s.getRadius()) {
+            double dr = 1 - (d / s.getRadius());
+            if (dr != 0) { //smooth stepping
+                dr = 3 * dr * dr - 2 * dr * dr * dr;
+            }
+            Matrix m;
+            m.rotateMatrix(v,angle * dr);
+            vertices[i] = m * vertices[i];
+        }
+    }
 }
 

@@ -120,3 +120,243 @@ void Vector::Orthonormal(Vector& x, Vector& y) const
   x = Normalized(Orthogonal());
   y = Normalized(*this / x);
 }
+
+
+
+//MATRIX
+
+void Matrix::initMatrix(double* values) { //initialise avec les valeurs. Si nullptr, init avec des 0
+    for (int i = 0; i < nbColumns * nbLines; i++) {
+        if (values != nullptr)
+            this->values.push_back(values[i]);
+        else
+            this->values.push_back(0);
+    }
+}
+
+double* Matrix::MatrixToArray()const {
+    double* res = new double[values.size()];
+    for (int i = 0; i < values.size(); i++) {
+        res[i] = values[i];
+    }
+    return res;
+}
+
+void Matrix::setValues(double* values, int size) {
+    this->values.clear();
+    for (int i = 0; i < size; i++) {
+        this->values.push_back(values[i]);
+    }
+}
+
+double Matrix::getDeterminant()const
+{
+	if (this->nbColumns != this->nbColumns)
+	{
+		throw "Matrix not quadratic";
+	}
+	int dimension = this->nbColumns;
+	if (dimension == 0)
+		return 1;
+	if (dimension == 1)
+		return getValue(0, 0);
+
+	if (dimension == 2)
+	{
+		return getValue(0, 0) * getValue(1, 1) - getValue(0, 1) * getValue(1, 0);
+	}
+	double result = 0;
+	int sign = 1;
+	for (int i = 0; i < dimension; i++) {
+
+		//Submatrix
+
+		Matrix subVect(dimension - 1, dimension - 1);
+		for (int m = 1; m < dimension; m++) {
+			int z = 0;
+			for (int n = 0; n < dimension; n++) {
+				if (n != i) {
+					subVect.setValue(m - 1, z, getValue(m, n));
+					z++;
+				}
+			}
+		}
+
+
+
+		result = result + sign * getValue(0, i) * subVect.getDeterminant();
+		sign = -sign;
+	}
+
+	return result;
+
+}
+
+Matrix* Matrix::getCofactor()const {
+
+	if (this->nbColumns == this->nbLines) {
+		int size = this->nbColumns;
+
+		Matrix* solution = new Matrix(size, size);
+
+		Matrix* subVect = new Matrix(size - 1, size - 1);
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+
+				int p = 0;
+				for (int x = 0; x < size; x++) {
+					if (x == i) {
+						continue;
+					}
+					int q = 0;
+
+					for (int y = 0; y < size; y++) {
+						if (y == j) {
+							continue;
+						}
+						subVect->setValue(p, q, this->getValue(x, y));
+						q++;
+					}
+					p++;
+				}
+				solution->setValue(i, j, pow(-1, i + j) * subVect->getDeterminant());
+			}
+		}
+		return solution;
+	}
+}
+
+
+void Matrix::transposition()
+{
+	Matrix temp(this->nbLines, this->nbColumns);
+	for (int i = 0; i < this->nbLines; i++)
+	{
+		for (int j = 0; j < this->nbColumns; j++)
+		{
+			temp.setValue(i, j, getValue(j, i));
+		}
+	}
+	*this = temp;
+}
+
+Matrix* Matrix::getInverse()const {
+	if (getDeterminant() == 0) {
+		throw std::runtime_error("Determinant is 0");
+	}
+	double d = 1.0 / getDeterminant();
+	Matrix* solution = new Matrix(this->nbLines, this->nbColumns);
+	for (int i = 0; i < solution->nbLines; i++) {
+		for (int j = 0; j < solution->nbColumns; j++) {
+			solution->setValue(i, j, getValue(i, j));
+		}
+	}
+	solution = solution->getCofactor();
+	solution->transposition();
+
+	for (int i = 0; i < nbLines; i++) {
+		for (int j = 0; j < nbColumns; j++) {
+			solution->setValue(i, j, solution->getValue(i, j) * d);
+		}
+	}
+	return solution;
+}
+
+std::string Matrix::toString()const {
+	std::string res = "Matrix " + std::to_string(nbColumns) + "x" + std::to_string(nbLines) + " : \n";
+	for (int i = 0; i < nbLines; i++) {
+		res += "| ";
+		for (int j = 0; j < nbColumns; j++) {
+			res += std::to_string(getValue(i, j)) + " ";
+		}
+		res += "|\n";
+	}
+	return res;
+}
+
+Matrix* Matrix::operator +(const Matrix& other)const {
+	if (nbColumns != other.nbColumns || nbLines != other.nbLines)
+		throw "Matrix::operator + : lines or column are inequals";
+	Matrix* res = new Matrix(*this);
+	for (int i = 0; i < nbLines; i++) {
+		for (int j = 0; j < nbColumns; j++) {
+			res->setValue(i, j, res->getValue(i, j) + other.getValue(i, j));
+		}
+	}
+	return res;
+}
+
+Matrix* Matrix::operator -(const Matrix& other)const {
+	if (nbColumns != other.nbColumns || nbLines != other.nbLines)
+		throw "Matrix::operator - : lines or column are inequals";
+	Matrix* res = new Matrix(*this);
+	for (int i = 0; i < nbLines; i++) {
+		for (int j = 0; j < nbColumns; j++) {
+			res->setValue(i, j, res->getValue(i, j) - other.getValue(i, j));
+		}
+	}
+	return res;
+}
+
+Matrix* Matrix::operator *(double s)const {
+	Matrix* res = new Matrix(*this);
+	for (int i = 0; i < nbLines; i++) {
+		for (int j = 0; j < nbColumns; j++) {
+			res->setValue(i, j, res->getValue(i, j) * s);
+		}
+	}
+	return res;
+}
+
+Matrix* Matrix::operator *(const Matrix& other)const {
+	if (nbColumns != other.nbLines)
+		throw "Matrix::operator * with matrix : lines and column are inequals";
+	Matrix* res = new Matrix(nbLines, other.nbColumns);
+	for (int i = 0; i < res->nbLines; i++) {
+		for (int j = 0; j < res->nbColumns; j++) {
+			double c = 0;
+			for (int k = 0; k < nbColumns; k++) {
+				c += this->getValue(i, k) * other.getValue(k, j);
+			}
+			res->setValue(i, j, c);
+		}
+	}
+	return res;
+}
+
+Vector Matrix::operator*(const Vector& v)const {
+	if (nbColumns != 3) {
+		throw "Matrix::operator * with vector : matrix has not 3 cols";
+	}
+	Matrix temp(v);
+	temp = *(*this * temp);
+	Vector res(temp.getValue(0, 0), temp.getValue(1, 0), temp.getValue(2, 0));
+	return res;
+}
+
+
+
+bool Matrix::operator ==(const Matrix& other)const {
+	if (nbColumns != other.nbColumns || nbLines != other.nbLines) {
+		return false;
+	}
+	for (int i = 0; i < this->nbLines; i++) {
+		for (int j = 0; j < this->nbColumns; j++) {
+			if (getValue(i, j) != other.getValue(i, j))
+				return false;
+		}
+	}
+	return true;
+}
+
+std::vector<double> Matrix::operator [](int i)const {
+	if (i > nbColumns) {
+		throw "Matrix::operator []  : out of range";
+	}
+	std::vector<double> res;
+	for (int j = 0; j < nbColumns; j++) {
+		res.push_back(getValue(i, j));
+	}
+	return res;
+}

@@ -3,6 +3,9 @@
 #include "box.h"
 #include "ray.h"
 #include "mathematics.h"
+#include "basic_shapes.h"
+
+
 
 // Triangle
 class Triangle
@@ -119,7 +122,92 @@ public:
   void SmoothNormals();
 
   // Constructors from core classes
+  //! Creat a mesh with a box
   explicit Mesh(const Box&);
+  //! Creat a mesh with a disk
+  explicit Mesh(const Disk&);
+  //! Creat a mesh with a sphere
+  explicit Mesh(const Sphere&);
+  //! Creat a mesh with a cylinder
+  explicit Mesh(const Cylinder&);
+  //! Creat a mesh with a tore
+  explicit Mesh(const Tore&);
+  //! Creat a mesh with a capsule
+  explicit Mesh(const Capsule&);
+  //! Creat a mesh with a heightfield
+  explicit Mesh(const HeightField&);
+
+
+  //Transformations
+  /*!
+	\brief Merge with an other mesh
+	\param a is the other mesh
+  */
+  void merge(const Mesh& a);
+  /*!
+	\brief apply a transformation to the mesh
+	\param m is the matrix of transformation
+  */
+  void transformation(const Matrix& m);
+  /*!
+	\brief apply an homothety to the mesh
+	\paramv is the vector of homothety
+  */
+  void homothetie(const Vector& v);
+
+  /*!
+	\brief apply a rotation to the mesh
+	\param p is axis of rotation
+	\param angle is the angle of rotation
+  */
+  void rotate(const Vector& p, double angle);
+  /*!
+	  \brief apply a rotation around the X axis
+	  \param angle is the angle of rotation
+  */
+  void rotateX(double angle);
+  /*!
+	\brief apply a rotation around the Y axis
+	\param angle is the angle of rotation
+  */
+  void rotateY(double angle);
+  /*!
+	  \brief apply a rotation around the Z axis
+	  \param angle is the angle of rotation
+  */
+  void rotateZ(double angle);
+  /*!
+	\brief apply a translation
+	\param v vector of translation
+  */
+  void translation(const Vector& v);
+
+  //deformations
+
+  /*!
+	  \brief applies to the mesh a deformation= in a sphere in the direction of a vector 
+	  \param s the sphere
+	  \param v the vector 
+  */
+  void sphereWarp(const Sphere& s, const Vector& v);
+  /*!
+	 \brief applies to the mesh a homothety in a sphere
+	 \param s the sphere
+	 \param v the vector of homothety
+  */
+  void sphereZoom(const Sphere& s, const Vector& v);
+  /*!
+   \brief applies to the mesh a rotation in a sphere
+   \param s the sphere
+   \param v the axis of rotation
+   \param angle the angle of rotation
+  */
+  void sphereRotate(const Sphere& s, const Vector& v,double angle);
+
+
+
+
+
 
   void Load(const QString&);
   void SaveObj(const QString&, const QString&) const;

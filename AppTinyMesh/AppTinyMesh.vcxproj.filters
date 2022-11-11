@@ -14,9 +14,6 @@
     <ClCompile Include="Source\box.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Source\shader-api.cpp">
-      <Filter>Source\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ray.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
@@ -40,6 +37,12 @@
     </ClCompile>
     <ClCompile Include="Source\implicits.cpp">
       <Filter>Source\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\basic_shapes.cpp">
+      <Filter>Source\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\shader-api.cpp">
+      <Filter>Source\Window</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +107,10 @@
     <ClInclude Include="Include\implicits.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="Include\sphere.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\basic_shapes.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\mesh.glsl">

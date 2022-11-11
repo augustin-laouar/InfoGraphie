@@ -1,8 +1,13 @@
 #pragma once
-
+#include <string>
 #include <math.h>
 #include <ostream>
+#include <vector>
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
 
+#define PI 3.14159265358979323846
 class Math
 {
 public:
@@ -136,6 +141,7 @@ public:
   // Norm
   friend double Norm(const Vector&);
   friend double SquaredNorm(const Vector&);
+  friend double Distance(const Vector& v1, const Vector& v2);
 
   friend void Normalize(Vector&);
   friend Vector Normalized(const Vector&);
@@ -157,6 +163,8 @@ public:
   // Scale
   Vector Scaled(const Vector&) const;
   Vector Inverse() const;
+
+  std::string vectorToString()const;
 
   friend std::ostream& operator<<(std::ostream&, const Vector&);
 
@@ -390,6 +398,13 @@ inline double SquaredNorm(const Vector& u)
   return (u.c[0] * u.c[0] + u.c[1] * u.c[1] + u.c[2] * u.c[2]);
 }
 
+
+inline double Distance(const Vector& v1, const Vector& v2) {
+	double res = (v2[0] - v1[0]) * (v2[0] - v1[0]);
+	res += (v2[1] - v1[1]) * (v2[1] - v1[1]);
+	res += (v2[2] - v1[2]) * (v2[2] - v1[2]);
+	return sqrt(res);
+}
 /*!
 \brief Return a normalized vector.
 
@@ -453,4 +468,285 @@ The values are given in trigonometric order.
 inline Vector Vector::Bilinear(const Vector& a00, const Vector& a10, const Vector& a11, const Vector& a01, double u, double v)
 {
   return (1 - u) * (1 - v) * a00 + (1 - u) * (v)*a01 + (u) * (1 - v) * a10 + (u) * (v)*a11;
+}
+
+inline std::string Vector::vectorToString()const {
+	return std::to_string(this-> c[0]) + ";" + std::to_string(this->c[1]) +";"+ std::to_string(this->c[2]);
+}
+
+
+
+//! Matrix class
+class Matrix {
+private:
+	std::vector<double> values; //! values of the matrix
+	int nbColumns;          //! Number of columns.
+	int nbLines;         //!  Number of lines.
+
+	/*!
+	  \brief Initialize values of the matrix 
+	  \param values is a table with values to initialize the matrix. If values is nullptr, initialize with zeros.
+	*/
+	void initMatrix(double* values);
+public:
+	/*!
+		\brief Creat a 3x3 matrix with only zeros.
+	*/
+	Matrix() { //defaut : matrice 3x3 avec des zeros
+		nbColumns = 3;
+		nbLines = 3;
+		initMatrix(nullptr);
+	}
+	/*!
+	  \brief Creat a matrix with only zeros.
+	  \param lines is the number of lines
+	  \param cols is the number of colums.
+	*/
+	Matrix(int lines, int cols) {
+		this->nbColumns = cols;
+		this->nbLines = lines;
+		initMatrix(nullptr);
+	}
+	/*!
+	  \brief Creat a matrix with values given.
+	  \param lines is the number of lines
+	  \param cols is the number of colums.
+	  \param values to initialize with initMatrix function.
+	*/
+	Matrix(int lines, int cols, double* values) {
+		this->nbColumns = cols;
+		this->nbLines = lines;
+		initMatrix(values);
+	}
+	/*!
+	  \brief Copy constructor
+	  \param other is the matrix to copy.
+	*/
+	Matrix(const Matrix& other) {
+		this->nbColumns = other.nbColumns;
+		this->nbLines = other.nbLines;
+		this->values = other.values;
+	}
+	/*!
+	  \brief Creat a 3x1 Matrix with a Vector
+	  \param v is the vector to copy.
+	*/
+	Matrix(const Vector& v) {
+		this->nbColumns = 1;
+		this->nbLines = 3;
+		values.push_back(v[0]);
+		values.push_back(v[1]);
+		values.push_back(v[2]);
+	}
+	/*!
+	  \brief Destroy the matrix
+	*/
+	virtual void destroy() {
+		values.clear();
+		nbColumns = 0;
+		nbLines = 0;
+	}
+	/*!
+	  \brief Destructor
+	*/
+	virtual ~Matrix() {
+		destroy();
+	}
+
+	/*!
+	  \brief Cast a matrix into a std::vector
+	  \return a copy of the member values.
+	*/
+	std::vector<double> MatrixToVector()const {
+		return values;
+	}
+	
+	/*!
+	  \brief Cast a matrix into a table.
+	  \return a table with values of the matrix.
+	*/
+	double* MatrixToArray()const;
+
+	/*!
+	  \brief Getter for nblines
+	*/
+	int getNbLines()const {
+		return nbLines;
+	}
+
+	/*!
+	  \brief Getter for nbcols
+	*/
+	int getNbCols()const {
+		return nbColumns;
+	}
+
+
+	/*!
+	  \brief set a value of the matrix
+	  \param i line number
+	  \param j column number
+	  \param value is the new value
+	*/
+	void setValue(int i, int j, double value) {
+		if(i< nbLines && j < nbColumns)
+			values[i * nbColumns + j] = value;
+	}
+
+	/*!
+	  \brief set all values of the matrix
+	  \param values is the table with new values
+	  \param size is the number of values
+	*/
+	void setValues(double* values, int size);
+
+	/*!
+	  \brief set all values of the matrix
+	  \param v is the std::vector with new values
+	*/
+	void setValues(std::vector<double> v) {
+		this->values = v;
+	}
+
+	/*!
+	  \brief getter for a value of the matrix
+	  \param i,j coordinates of the value
+	  \return the value
+	*/
+	double getValue(int i, int j)const {
+		if (i < nbLines && j < nbColumns)
+			return values[i * nbColumns + j];
+		else {
+			throw "Matrix::getValue : out of range";
+		}
+	}
+
+	/*!
+	  \brief copy an other matrix
+	  \param other is the matrix to copy
+	*/
+	void copy(const Matrix& other) {
+		destroy();
+		nbColumns = other.nbColumns;
+		nbLines = other.nbLines;
+		values = other.values;
+	}
+	/*!
+	  \brief Creat a clone 
+	  \return the clone of this matrix
+	*/
+	Matrix * clone()const {
+		Matrix* m = new Matrix(*this);
+		return m;
+	}
+
+	//methodes
+
+	//MATRICES DE TRANSFORMATIONS
+
+
+	/*!
+	  \brief this matrix became a dilation matrix
+	  \param v is the vector of dilation
+	*/
+	void homothetieMatrix(const Vector& v) {
+		double values[9] = {v[0],0,0,0,v[1],0,0,0,v[2]};
+		destroy();
+		nbColumns = 3;
+		nbLines = 3;
+		initMatrix(values);
+	}
+	/*!
+	  \brief this matrix became a rotation matrix
+	  \param p is the rotation axis
+	  \param angle is the rotation angle
+	*/
+	void rotateMatrix(const Vector& p, double angle) {
+		double values[9];
+
+		values[0] = p[0] * p[0] * (1 - cos(angle)) + cos(angle); //Ux² * (1-c) + c
+		values[1] = p[0] * p[1] * (1 - cos(angle)) - p[2] * sin(angle);
+		values[2] = p[0] * p[2] * (1 - cos(angle)) + p[1] * sin(angle);
+		values[3] = p[0] * p[1] * (1 - cos(angle)) + p[2] * sin(angle); //Ux * Uy * (1-c) + Uz * s
+		values[4] = p[1] * p[1] * (1 - cos(angle)) + cos(angle);
+		values[5] = p[1] * p[2] * (1 - cos(angle)) - p[0] * sin(angle);
+		values[6] = p[0] * p[2] * (1 - cos(angle)) - p[1] * sin(angle);
+		values[7] = p[1] * p[2] * (1 - cos(angle)) + p[0] * sin(angle);
+		values[8] = p[2] * p[2] * (1 - cos(angle)) + cos(angle);
+
+ 		destroy();
+		nbColumns = 3;
+		nbLines = 3;
+		initMatrix(values);
+	}
+
+	/*!
+	  \brief determinant of the matrix
+	  \return the determinant of the matrix
+	*/
+	double getDeterminant()const;
+
+	/*!
+	  \brief cofactor of the matrix
+	  \return the cofactor of the matrix
+	*/
+	Matrix* getCofactor()const;
+
+	/*!
+	  \brief transpose the matrix
+	*/
+	void transposition();
+	
+	/*!
+	  \brief inverse matrix
+	  \return return the inverse matrix of this matrix
+	*/
+	Matrix* getInverse()const;
+
+	//! std::string for the matrix
+	std::string toString()const;
+	//operator
+
+	//! + between this matrix and an other
+	Matrix* operator +(const Matrix& other)const;
+
+	//! - between this matrix and an other
+	Matrix* operator -(const Matrix& other)const;
+
+	//! + between this matrix and a double
+	Matrix* operator *(double s)const;
+
+	//! * between this matrix and an other
+	Matrix* operator *(const Matrix& other)const;
+	
+	//! * between this matrix and a vector
+	Vector operator*(const Vector& v)const;
+
+	//! = with a matrix
+	Matrix& operator =(const Matrix& other) {
+		if (this != &other) {
+			this->copy(other);
+		}
+		return *this;
+	}
+
+	//! equality between this matrix and an other
+	bool operator ==(const Matrix& other)const;
+
+	//! inequality between this matrix and an other
+	bool operator !=(const Matrix& other)const {
+		bool res = *this == other;
+		return !res;
+	}
+
+	//! return a line of the matrix
+	std::vector<double> operator [](int i)const;
+};
+
+//! print a matrix 
+
+inline std::ostream& operator<<(std::ostream& s, const Matrix& m)
+{
+	s << m.toString();
+	return s;
 }

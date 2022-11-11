@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <iostream>
-
 #include "mathematics.h"
 
 class Box

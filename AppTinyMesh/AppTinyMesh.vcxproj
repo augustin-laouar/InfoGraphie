@@ -116,6 +116,7 @@
     <ClCompile Include="Source\ray.cpp" />
     <ClCompile Include="Source\shader-api.cpp" />
     <ClCompile Include="Source\triangle.cpp" />
+    <ClCompile Include="Source\basic_shapes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="Include\qte.h">
@@ -164,6 +165,7 @@
     <ClInclude Include="Include\mesh.h" />
     <ClInclude Include="Include\meshcolor.h" />
     <ClInclude Include="Include\ray.h" />
+    <ClInclude Include="Include\basic_shapes.h" />
     <ClInclude Include="Include\shader-api.h" />
   </ItemGroup>
   <ItemGroup>
